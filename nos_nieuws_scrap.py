@@ -17,7 +17,8 @@ def get_article_body(url):
     stop_words = {
         "Deel artikel", "Voorpagina", "Laatste nieuws", "Video's", "Binnenland",
         "Buitenland", "Regionaal nieuws", "Politiek", "Economie", "Koningshuis",
-        "Tech", "Cultuur & media",  "Cultuur & Media","Opmerkelijk","In samenwerking met RTV Utrecht", "In samenwerking met NH"
+        "Tech", "Cultuur & media", "Cultuur & Media", "Opmerkelijk",
+        "In samenwerking met RTV Utrecht", "In samenwerking met NH"
     }
 
     try:
@@ -49,7 +50,7 @@ def get_article_body(url):
     except Exception as e:
         return str(e)
 
-# --------------------- 하드코딩 네덜란드어 불용어 ---------------------
+# --------------------- 네덜란드어 불용어 ---------------------
 dutch_stopwords = {
     "de", "en", "van", "ik", "te", "dat", "die", "in", "een", "hij", "het", "niet",
     "zijn", "is", "was", "op", "aan", "met", "als", "voor", "had", "er", "maar",
@@ -59,7 +60,7 @@ dutch_stopwords = {
     "zal", "me", "zij", "nu", "ge", "geen", "omdat", "iets", "worden", "toch",
     "al", "waren", "veel", "meer", "doen", "toen", "moet", "ben", "zonder", "kan",
     "hun", "dus", "alles", "onder", "ja", "werd", "wezen", "zelf", "tegen",
-    "hebben", "waar", "zal", "komen", "tegen", "goed", "hier", "wie", "waarom"
+    "komen", "goed", "hier", "wie", "waarom"
 }
 
 # --------------------- 키워드 추출 ---------------------
@@ -78,7 +79,7 @@ def extract_keywords(text, top_n=10):
 
     return [(kw, freq[kw]) for kw in unique_keywords], filtered_words
 
-# --------------------- 뉴스 크롤링 (requests + bs4) ---------------------
+# --------------------- 뉴스 크롤링 ---------------------
 def crawling_news(category_slug, count=2):
     base_url = "https://nos.nl/"
     category_url = base_url + category_slug
@@ -94,9 +95,7 @@ def crawling_news(category_slug, count=2):
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # 기사 링크 리스트 추출 - 대략적인 CSS 선택자 예시, 필요에 따라 조정
         articles = soup.select("a[href*='/artikel']")  
-
         urls_seen = set()
 
         for link in articles:
@@ -110,7 +109,7 @@ def crawling_news(category_slug, count=2):
                 url = "https://nos.nl" + url
             urls_seen.add(url)
 
-            title = link.get_text(strip=True)
+            title = link.get_text(strip=True) or ""
             titleSet = title.split('\n')
             try:
                 body = get_article_body(url)
@@ -127,6 +126,7 @@ def crawling_news(category_slug, count=2):
                 continue
     except Exception as e:
         st.error(f"뉴스 크롤링 오류: {e}")
+        st.write(f"❌ 실패한 URL: {category_url}")
 
     return news_list
 
@@ -147,29 +147,45 @@ def generate_csv_bytes(result):
         })
     return output.getvalue().encode('utf-8-sig')
 
-# --------------------- 카테고리 목록 ---------------------
+# --------------------- UI 카테고리 목록 ---------------------
 menu_dict = { 
-    1:"Voorpagina",
-    2:"Laatste nieuws",
-    3: "Video's",
-    4: "Binnenland",
-    5: "Buitenland",
-    6: "Regionaal nieuws",
-    7: "Politiek",
-    8: "Economie",
-    9: "Koningshuis",
-    10: "Tech",
-    11: "Cultuur & media",
-    12: "Opmerkelijk"
+    1: "Laatste nieuws",
+    2: "Video's",
+    3: "Binnenland",
+    4: "Buitenland",
+    5: "Regionaal nieuws",
+    6: "Politiek",
+    7: "Economie",
+    8: "Koningshuis",
+    9: "Tech",
+    10: "Cultuur & media",
+    11: "Opmerkelijk"
 }
 
-# --------------------- UI ---------------------
+# --------------------- 실제 URL 매핑 ---------------------
+menu_url_map = {
+    "Laatste nieuws": "nieuws/laatste",
+    "Video's": "nieuws/laatste/videos",
+    "Binnenland": "nieuws/binnenland",
+    "Buitenland": "nieuws/buitenland",
+    "Regionaal nieuws": "nieuws/regio",
+    "Politiek": "nieuws/politiek",
+    "Economie": "nieuws/economie",
+    "Koningshuis": "nieuws/koningshuis",
+    "Tech": "nieuws/tech",
+    "Cultuur & media": "nieuws/cultuur-en-media",
+    "Opmerkelijk": "nieuws/opmerkelijk"
+}
+
+# --------------------- UI 입력 ---------------------
 selected = st.selectbox("🗂️ Kies een 카테고리", list(menu_dict.keys()), format_func=lambda x: f"{x}. {menu_dict[x]}")
 article_count = st.slider("📰 기사 수 선택", 1, 10, 2)
 
 # --------------------- 실행 버튼 ---------------------
 if st.button("🚀 뉴스 크롤링 시작"):
-    result = crawling_news(menu_dict[selected], article_count)
+    selected_name = menu_dict[selected]
+    category_slug = menu_url_map.get(selected_name, "")
+    result = crawling_news(category_slug, article_count)
 
     for i, news in enumerate(result, 1):
         st.markdown(f"### {i}. {news['title']}")
@@ -178,7 +194,7 @@ if st.button("🚀 뉴스 크롤링 시작"):
         with st.expander("📄 본문 펼치기"):
             st.write(news['body'])
 
-    if st.checkbox("📄 CSV 파일을 생성하시겠습니까?"):
+    if result and st.checkbox("📄 CSV 파일을 생성하시겠습니까?"):
         csv_bytes = generate_csv_bytes(result)
         if csv_bytes:
             st.success("✅ CSV 파일이 생성되었습니다.")
