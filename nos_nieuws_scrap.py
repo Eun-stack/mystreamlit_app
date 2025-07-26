@@ -19,7 +19,7 @@ def get_article_body(url):
         "Buitenland", "Regionaal nieuws", "Politiek", "Economie", "Koningshuis",
         "Tech", "Cultuur & media",  "Cultuur & Media","Opmerkelijk","In samenwerking met RTV Utrecht", "In samenwerking met NH"
     }
-
+    
     try:
         headers = {"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
         resp = requests.get(url, headers=headers)
@@ -148,10 +148,19 @@ def generate_csv_bytes(result):
     return output.getvalue().encode('utf-8-sig')
 
 # --------------------- 카테고리 목록 ---------------------
-menu_dict = {
-    1:"voorpagina", 2:"laatste-nieuws", 3:"videos", 4:"binnenland", 5:"buitenland",
-    6:"regionaal-nieuws", 7:"politiek", 8:"economie", 9:"koningshuis",
-    10:"tech", 11:"cultuur-en-media", 12:"opmerkelijk"
+menu_dict = { 
+    1:"Voorpagina",
+    2:"Laatste nieuws",
+    3: "Video's",
+    4: "Binnenland",
+    5: "Buitenland",
+    6: "Regionaal nieuws",
+    7: "Politiek",
+    8: "Economie",
+    9: "Koningshuis",
+    10: "Tech",
+    11: "Cultuur & media",
+    12: "Opmerkelijk"
 }
 
 # --------------------- UI ---------------------
