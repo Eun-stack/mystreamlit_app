@@ -50,7 +50,7 @@ def get_article_body(url):
     except Exception as e:
         return str(e)
 
-# --------------------- 네덜란드어 불용어 ---------------------
+# --------------------- 불용어 ---------------------
 dutch_stopwords = {
     "de", "en", "van", "ik", "te", "dat", "die", "in", "een", "hij", "het", "niet",
     "zijn", "is", "was", "op", "aan", "met", "als", "voor", "had", "er", "maar",
@@ -95,7 +95,7 @@ def crawling_news(category_slug, count=2):
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        articles = soup.select("a[href*='/artikel']")  
+        articles = soup.select("a[href*='/artikel']")
         urls_seen = set()
 
         for link in articles:
@@ -110,12 +110,14 @@ def crawling_news(category_slug, count=2):
             urls_seen.add(url)
 
             title = link.get_text(strip=True) or ""
-            titleSet = title.split('\n')
+            # 시간 정보 제거 (예: vandaag, 03:45 / maandag 12:30 등)
+            title = re.sub(r'^(vandaag|gisteren|[A-Za-z]+)?[, ]*\d{1,2}:\d{2}', '', title, flags=re.IGNORECASE).strip()
+
             try:
                 body = get_article_body(url)
                 keywords, long_words = extract_keywords(body)
                 news_list.append({
-                    'title': titleSet[1] if len(titleSet) > 1 else titleSet[0],
+                    'title': title,
                     'url': url,
                     'body': body,
                     'keywords': [kw for kw, _ in keywords],
@@ -147,7 +149,7 @@ def generate_csv_bytes(result):
         })
     return output.getvalue().encode('utf-8-sig')
 
-# --------------------- UI 카테고리 목록 ---------------------
+# --------------------- UI 카테고리 ---------------------
 menu_dict = { 
     1: "Laatste nieuws",
     2: "Video's",
@@ -181,8 +183,9 @@ menu_url_map = {
 selected = st.selectbox("🗂️ Kies een 카테고리", list(menu_dict.keys()), format_func=lambda x: f"{x}. {menu_dict[x]}")
 article_count = st.slider("📰 기사 수 선택", 1, 10, 2)
 
-# --------------------- 실행 버튼 ---------------------
+# --------------------- 실행 ---------------------
 if st.button("🚀 뉴스 크롤링 시작"):
+    st.info("🔄 뉴스를 수집하는 중입니다... 잠시만 기다려주세요.")
     selected_name = menu_dict[selected]
     category_slug = menu_url_map.get(selected_name, "")
     result = crawling_news(category_slug, article_count)
