@@ -19,7 +19,7 @@ def get_article_body(url):
         "Buitenland", "Regionaal nieuws", "Politiek", "Economie", "Koningshuis",
         "Tech", "Cultuur & media",  "Cultuur & Media","Opmerkelijk","In samenwerking met RTV Utrecht", "In samenwerking met NH"
     }
-    
+
     try:
         headers = {"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
         resp = requests.get(url, headers=headers)
@@ -80,7 +80,7 @@ def extract_keywords(text, top_n=10):
 
 # --------------------- 뉴스 크롤링 (requests + bs4) ---------------------
 def crawling_news(category_slug, count=2):
-    base_url = "https://nos.nl/nieuws/"
+    base_url = "https://nos.nl/"
     category_url = base_url + category_slug
 
     headers = {
