@@ -33,16 +33,21 @@ def get_article_info(url):
         if not main:
             return "geen titel", "geen tekst"
 
+        # Titel
         h1 = main.find("h1")
         title = h1.get_text(" ", strip=True) if h1 else "geen titel"
 
+        # --- h1 바로 다음 ul 제거 로직 ---
         if h1:
             for sibling in h1.find_next_siblings():
+                # 첫 번째 <p>를 만나면 중단
                 if sibling.name == "p":
                     break
+                # <ul>이면 제거
                 if sibling.name == "ul":
                     sibling.decompose()
 
+        # Tekst
         parts = []
         for el in main.find_all(["p", "h2", "li"], recursive=True):
             txt = el.get_text(" ", strip=True)
@@ -96,7 +101,7 @@ def extract_keywords(text, top_n=10):
     return [(kw, freq[kw]) for kw in unique_keywords], filtered_words
 
 # --------------------- Nieuws crawlen ---------------------
-def crawling_news(category_slug, count=2, animation_placeholder=None):
+def crawling_news(category_slug, count=2):
     base_url = "https://nos.nl/"
     category_url = base_url + category_slug
     headers = {
@@ -112,11 +117,9 @@ def crawling_news(category_slug, count=2, animation_placeholder=None):
         articles = soup.select("a[href*='/artikel']")
         urls_seen = set()
 
+        # Voortgangsbalk
         progress = st.progress(0)
         total = min(count, len(articles))
-
-        icons = ["🔄", "🔁"]
-        icon_index = 0
 
         for idx, link in enumerate(articles):
             if len(news_list) >= count:
@@ -128,10 +131,6 @@ def crawling_news(category_slug, count=2, animation_placeholder=None):
             if not url.startswith("http"):
                 url = "https://nos.nl" + url
             urls_seen.add(url)
-
-            if animation_placeholder:
-                animation_placeholder.markdown(f"{icons[icon_index % 2]} Bezig met ophalen van nieuws...")
-                icon_index += 1
 
             try:
                 title, body = get_article_info(url)
@@ -145,15 +144,15 @@ def crawling_news(category_slug, count=2, animation_placeholder=None):
                     'lange_woorden': long_words
                 })
 
+                # Update voortgang
                 progress.progress(int((len(news_list) / total) * 100))
+
                 time.sleep(random.uniform(2.0, 3.0))
 
             except:
                 continue
 
         progress.empty()
-        if animation_placeholder:
-            animation_placeholder.markdown("✅ Crawlen voltooid!")
 
     except Exception as e:
         st.error(f"Fout bij het crawlen van nieuws: {e}")
@@ -212,5 +211,27 @@ selected = st.selectbox("🗂️ Kies een categorie", list(menu_dict.keys()), fo
 article_count = st.slider("📰 Aantal artikelen", 1, 10, 2)
 
 if st.button("🚀 Start nieuws crawling"):
-    animation_placeholder = st.empty()
-    selected
+    st.info("🔄 Bezig met ophalen van nieuws... even geduld a.u.b.")
+    selected_name = menu_dict[selected]
+    category_slug = menu_url_map.get(selected_name, "")
+    result = crawling_news(category_slug, article_count)
+
+    for i, news in enumerate(result, 1):
+        st.markdown(f"### {i}. {news['title']}")
+        st.markdown(f"🔗 [Artikel link]({news['url']})")
+        st.markdown(f"🧠 **Trefwoorden:** {', '.join(news['keywords'])}")
+        with st.expander("📄 Toon artikeltekst"):
+            st.write(news['body'])
+
+    if result and st.checkbox("📄 CSV-bestand genereren?"):
+        csv_bytes = generate_csv_bytes(result)
+        if csv_bytes:
+            st.success("✅ CSV-bestand is aangemaakt.")
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv_bytes,
+                file_name=f"nos_nieuws_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.warning("⚠️ Geen nieuwsgegevens om op te slaan.")
