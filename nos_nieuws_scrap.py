@@ -110,6 +110,7 @@ def crawling_news(category_slug, count=2):
             urls_seen.add(url)
 
             title = link.get_text(strip=True) or ""
+            print(title)
             # 시간 정보 제거 (예: vandaag, 03:45 / maandag 12:30 등)
             title = re.sub(r'^(vandaag|gisteren|[A-Za-z]+)?[, ]*\d{1,2}:\d{2}', '', title, flags=re.IGNORECASE).strip()
 
