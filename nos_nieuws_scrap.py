@@ -12,8 +12,8 @@ import io
 st.set_page_config(page_title="NOS 뉴스 크롤러", layout="wide")
 st.title("📰 NOS 뉴스 크롤링 및 키워드 추출")
 
-# --------------------- 본문 크롤링 ---------------------
-def get_article_body(url):
+# --------------------- 기사 제목 + 본문 한 번에 추출 ---------------------
+def get_article_info(url):
     stop_words = {
         "Deel artikel", "Voorpagina", "Laatste nieuws", "Video's", "Binnenland",
         "Buitenland", "Regionaal nieuws", "Politiek", "Economie", "Koningshuis",
@@ -22,15 +22,22 @@ def get_article_body(url):
     }
 
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+        }
         resp = requests.get(url, headers=headers)
-        time.sleep(random.uniform(1.5, 2.5))
+        time.sleep(random.uniform(1.0, 2.0))  # 본문 요청 후 잠깐 대기
         soup = BeautifulSoup(resp.text, "html.parser")
 
         main = soup.select_one("main#content")
         if not main:
-            return "본문 없음"
+            return "제목 없음", "본문 없음"
 
+        # 제목 추출
+        h1 = main.find("h1")
+        title = h1.get_text(" ", strip=True) if h1 else "제목 없음"
+
+        # 본문 추출
         parts = []
         for el in main.find_all(["p", "h2", "li"], recursive=True):
             txt = el.get_text(" ", strip=True)
@@ -38,6 +45,8 @@ def get_article_body(url):
                 continue
             if txt in stop_words:
                 break
+            if title and txt == title:
+                continue
             if el.name == "h2":
                 parts.append(f"\n**{txt}**\n")
             elif el.name == "li":
@@ -45,10 +54,11 @@ def get_article_body(url):
             else:
                 parts.append(txt)
 
-        return "\n\n".join(parts)
+        body = "\n\n".join(parts)
+        return title, body
 
     except Exception as e:
-        return str(e)
+        return "제목 없음", str(e)
 
 # --------------------- 불용어 ---------------------
 dutch_stopwords = {
@@ -83,13 +93,11 @@ def extract_keywords(text, top_n=10):
 def crawling_news(category_slug, count=2):
     base_url = "https://nos.nl/"
     category_url = base_url + category_slug
-
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
     }
 
     news_list = []
-
     try:
         resp = requests.get(category_url, headers=headers)
         resp.raise_for_status()
@@ -98,7 +106,11 @@ def crawling_news(category_slug, count=2):
         articles = soup.select("a[href*='/artikel']")
         urls_seen = set()
 
-        for link in articles:
+        # 진행 상황 바
+        progress = st.progress(0)
+        total = min(count, len(articles))
+
+        for idx, link in enumerate(articles):
             if len(news_list) >= count:
                 break
 
@@ -109,14 +121,10 @@ def crawling_news(category_slug, count=2):
                 url = "https://nos.nl" + url
             urls_seen.add(url)
 
-            title = link.get_text(strip=True) or ""
-            print(title)
-            # 시간 정보 제거 (예: vandaag, 03:45 / maandag 12:30 등)
-            title = re.sub(r'^(vandaag|gisteren|[A-Za-z]+)?[, ]*\d{1,2}:\d{2}', '', title, flags=re.IGNORECASE).strip()
-
             try:
-                body = get_article_body(url)
+                title, body = get_article_info(url)
                 keywords, long_words = extract_keywords(body)
+
                 news_list.append({
                     'title': title,
                     'url': url,
@@ -124,9 +132,18 @@ def crawling_news(category_slug, count=2):
                     'keywords': [kw for kw, _ in keywords],
                     'lange_woorden': long_words
                 })
-                time.sleep(random.uniform(2, 4))
+
+                # 진행률 업데이트
+                progress.progress(int((len(news_list) / total) * 100))
+
+                # 기사 하나 처리 후 대기
+                time.sleep(random.uniform(2.0, 3.0))
+
             except:
                 continue
+
+        progress.empty()  # 진행 상황 바 제거
+
     except Exception as e:
         st.error(f"뉴스 크롤링 오류: {e}")
         st.write(f"❌ 실패한 URL: {category_url}")
@@ -165,7 +182,6 @@ menu_dict = {
     11: "Opmerkelijk"
 }
 
-# --------------------- 실제 URL 매핑 ---------------------
 menu_url_map = {
     "Laatste nieuws": "nieuws/laatste",
     "Video's": "nieuws/laatste/videos",
@@ -180,11 +196,10 @@ menu_url_map = {
     "Opmerkelijk": "nieuws/opmerkelijk"
 }
 
-# --------------------- UI 입력 ---------------------
+# --------------------- UI ---------------------
 selected = st.selectbox("🗂️ Kies een 카테고리", list(menu_dict.keys()), format_func=lambda x: f"{x}. {menu_dict[x]}")
 article_count = st.slider("📰 기사 수 선택", 1, 10, 2)
 
-# --------------------- 실행 ---------------------
 if st.button("🚀 뉴스 크롤링 시작"):
     st.info("🔄 뉴스를 수집하는 중입니다... 잠시만 기다려주세요.")
     selected_name = menu_dict[selected]
