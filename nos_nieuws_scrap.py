@@ -21,49 +21,47 @@ def get_article_info(url):
         "In samenwerking met RTV Utrecht", "In samenwerking met NH"
     }
 
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
-        }
-        resp = requests.get(url, headers=headers)
-        time.sleep(random.uniform(1.0, 2.0))
-        soup = BeautifulSoup(resp.text, "html.parser")
+    resp = requests.get(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+    })
+    resp.raise_for_status()
+    time.sleep(random.uniform(1.0, 2.0))
 
-        main = soup.select_one("main#content")
-        if not main:
-            return "geen titel", "geen tekst"
+    soup = BeautifulSoup(resp.text, "html.parser")
+    main = soup.select_one("main#content")
+    if not main:
+        return "geen titel", "geen tekst"
 
-        h1 = main.find("h1")
-        title = h1.get_text(" ", strip=True) if h1 else "geen titel"
+    h1 = main.find("h1")
+    title = h1.get_text(" ", strip=True) if h1 else "geen titel"
 
-        if h1:
-            for sibling in h1.find_next_siblings():
-                if sibling.name == "p":
-                    break
-                if sibling.name == "ul":
-                    sibling.decompose()
-
-        parts = []
-        for el in main.find_all(["p", "h2", "li"], recursive=True):
-            txt = el.get_text(" ", strip=True)
-            if not txt:
-                continue
-            if txt in stop_words:
+    # 제목 아래 불필요한 <ul> 제거
+    if h1:
+        for sibling in h1.find_next_siblings():
+            # 본문 시작으로 판단되는 <p>가 나오면 반복 중단
+            if sibling.name == "p":
                 break
-            if title and txt == title:
-                continue
-            if el.name == "h2":
-                parts.append(f"\n**{txt}**\n")
-            elif el.name == "li":
-                parts.append(f"- {txt}")
-            else:
-                parts.append(txt)
+            if sibling.name == "ul":
+                sibling.decompose()
 
-        body = "\n\n".join(parts)
-        return title, body
+    parts = []
+    for el in main.find_all(["p", "h2", "li"], recursive=True):
+        txt = el.get_text(" ", strip=True)
+        if not txt:
+            continue
+        if title and txt == title:
+            continue
+        if txt in stop_words:
+            break
+        if el.name == "h2":
+            parts.append(f"\n**{txt}**\n")
+        elif el.name == "li":
+            parts.append(f"- {txt}")
+        else:
+            parts.append(txt)
 
-    except Exception as e:
-        return "geen titel", str(e)
+    body = "\n\n".join(parts)
+    return title, body
 
 # --------------------- Stopwoorden ---------------------
 dutch_stopwords = {
