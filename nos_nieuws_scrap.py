@@ -9,10 +9,10 @@ import re
 import random
 import io
 
-st.set_page_config(page_title="NOS 뉴스 크롤러", layout="wide")
-st.title("📰 NOS 뉴스 크롤링 및 키워드 추출")
+st.set_page_config(page_title="NOS nieuws crawler", layout="wide")
+st.title("📰 NOS nieuws crawler en trefwoordenextractie")
 
-# --------------------- 기사 제목 + 본문 한 번에 추출 ---------------------
+# --------------------- Artikel titel + tekst ---------------------
 def get_article_info(url):
     stop_words = {
         "Deel artikel", "Voorpagina", "Laatste nieuws", "Video's", "Binnenland",
@@ -26,18 +26,18 @@ def get_article_info(url):
             "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
         }
         resp = requests.get(url, headers=headers)
-        time.sleep(random.uniform(1.0, 2.0))  # 본문 요청 후 잠깐 대기
+        time.sleep(random.uniform(1.0, 2.0))
         soup = BeautifulSoup(resp.text, "html.parser")
 
         main = soup.select_one("main#content")
         if not main:
-            return "제목 없음", "본문 없음"
+            return "geen titel", "geen tekst"
 
-        # 제목 추출
+        # Titel
         h1 = main.find("h1")
-        title = h1.get_text(" ", strip=True) if h1 else "제목 없음"
+        title = h1.get_text(" ", strip=True) if h1 else "geen titel"
 
-        # 본문 추출
+        # Tekst
         parts = []
         for el in main.find_all(["p", "h2", "li"], recursive=True):
             txt = el.get_text(" ", strip=True)
@@ -58,9 +58,9 @@ def get_article_info(url):
         return title, body
 
     except Exception as e:
-        return "제목 없음", str(e)
+        return "geen titel", str(e)
 
-# --------------------- 불용어 ---------------------
+# --------------------- Stopwoorden ---------------------
 dutch_stopwords = {
     "de", "en", "van", "ik", "te", "dat", "die", "in", "een", "hij", "het", "niet",
     "zijn", "is", "was", "op", "aan", "met", "als", "voor", "had", "er", "maar",
@@ -73,7 +73,7 @@ dutch_stopwords = {
     "komen", "goed", "hier", "wie", "waarom"
 }
 
-# --------------------- 키워드 추출 ---------------------
+# --------------------- Trefwoordenextractie ---------------------
 def extract_keywords(text, top_n=10):
     words = re.findall(r'\b[a-zA-Z]{10,}\b', text)
     capitalized_words = [w.capitalize() for w in words]
@@ -89,7 +89,7 @@ def extract_keywords(text, top_n=10):
 
     return [(kw, freq[kw]) for kw in unique_keywords], filtered_words
 
-# --------------------- 뉴스 크롤링 ---------------------
+# --------------------- Nieuws crawlen ---------------------
 def crawling_news(category_slug, count=2):
     base_url = "https://nos.nl/"
     category_url = base_url + category_slug
@@ -106,7 +106,7 @@ def crawling_news(category_slug, count=2):
         articles = soup.select("a[href*='/artikel']")
         urls_seen = set()
 
-        # 진행 상황 바
+        # Voortgangsbalk
         progress = st.progress(0)
         total = min(count, len(articles))
 
@@ -133,24 +133,23 @@ def crawling_news(category_slug, count=2):
                     'lange_woorden': long_words
                 })
 
-                # 진행률 업데이트
+                # Update voortgang
                 progress.progress(int((len(news_list) / total) * 100))
 
-                # 기사 하나 처리 후 대기
                 time.sleep(random.uniform(2.0, 3.0))
 
             except:
                 continue
 
-        progress.empty()  # 진행 상황 바 제거
+        progress.empty()
 
     except Exception as e:
-        st.error(f"뉴스 크롤링 오류: {e}")
-        st.write(f"❌ 실패한 URL: {category_url}")
+        st.error(f"Fout bij het crawlen van nieuws: {e}")
+        st.write(f"❌ Mislukte URL: {category_url}")
 
     return news_list
 
-# --------------------- CSV 생성 ---------------------
+# --------------------- CSV genereren ---------------------
 def generate_csv_bytes(result):
     if not result:
         return None
@@ -167,7 +166,7 @@ def generate_csv_bytes(result):
         })
     return output.getvalue().encode('utf-8-sig')
 
-# --------------------- UI 카테고리 ---------------------
+# --------------------- UI Categorieën ---------------------
 menu_dict = { 
     1: "Laatste nieuws",
     2: "Video's",
@@ -197,31 +196,31 @@ menu_url_map = {
 }
 
 # --------------------- UI ---------------------
-selected = st.selectbox("🗂️ Kies een 카테고리", list(menu_dict.keys()), format_func=lambda x: f"{x}. {menu_dict[x]}")
-article_count = st.slider("📰 기사 수 선택", 1, 10, 2)
+selected = st.selectbox("🗂️ Kies een categorie", list(menu_dict.keys()), format_func=lambda x: f"{x}. {menu_dict[x]}")
+article_count = st.slider("📰 Aantal artikelen", 1, 10, 2)
 
-if st.button("🚀 뉴스 크롤링 시작"):
-    st.info("🔄 뉴스를 수집하는 중입니다... 잠시만 기다려주세요.")
+if st.button("🚀 Start nieuws crawling"):
+    st.info("🔄 Bezig met ophalen van nieuws... even geduld a.u.b.")
     selected_name = menu_dict[selected]
     category_slug = menu_url_map.get(selected_name, "")
     result = crawling_news(category_slug, article_count)
 
     for i, news in enumerate(result, 1):
         st.markdown(f"### {i}. {news['title']}")
-        st.markdown(f"🔗 [기사 링크]({news['url']})")
-        st.markdown(f"🧠 **키워드:** {', '.join(news['keywords'])}")
-        with st.expander("📄 본문 펼치기"):
+        st.markdown(f"🔗 [Artikel link]({news['url']})")
+        st.markdown(f"🧠 **Trefwoorden:** {', '.join(news['keywords'])}")
+        with st.expander("📄 Toon artikeltekst"):
             st.write(news['body'])
 
-    if result and st.checkbox("📄 CSV 파일을 생성하시겠습니까?"):
+    if result and st.checkbox("📄 CSV-bestand genereren?"):
         csv_bytes = generate_csv_bytes(result)
         if csv_bytes:
-            st.success("✅ CSV 파일이 생성되었습니다.")
+            st.success("✅ CSV-bestand is aangemaakt.")
             st.download_button(
-                label="📥 CSV 다운로드",
+                label="📥 Download CSV",
                 data=csv_bytes,
                 file_name=f"nos_nieuws_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv"
             )
         else:
-            st.warning("⚠️ 저장할 뉴스 데이터가 없습니다.")
+            st.warning("⚠️ Geen nieuwsgegevens om op te slaan.")
