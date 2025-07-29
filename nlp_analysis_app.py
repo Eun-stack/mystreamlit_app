@@ -45,7 +45,7 @@ deprel_match = {
     "cop" : "연결 동사",
     "flat" : "구성 요소",
     "obl:arg" : "외적 인수",
-    "marker" : "절 시작 표지",
+    "mark" : "절 시작 표지",
     "advcl" : "부사절",
     "csubj" : "절 주어",
     "aux:pass" : "수동태 보조 동사",
@@ -80,59 +80,77 @@ NER_match = {
 
 # Streamlit 페이지 설정
 st.set_page_config(page_title="네덜란드어 문장 분석기", layout="wide")
-
-# 페이지 타이틀
 st.title("네덜란드어 문장 분석기")
 
 # 사용자가 문장 입력
-user_input = st.text_area("분석할 문장을 입력하세요:", height=200)
+user_input = st.text_area("분석할 네덜란드어 문장을 입력하세요.", height=200)
 
 # 입력이 있으면 분석
 if user_input:
-    with st.spinner("문장을 분석 중입니다... 잠시만 기다려 주세요."):
+    with st.spinner("문장을 분석 중입니다..."):
         # 텍스트 분석
         doc = nlp(user_input)
 
-        # 문장별 품사 태깅 데이터
+        # 품사 태깅 데이터
         pos_data = []
         for idx, sentence in enumerate(doc.sentences, start=1):
             for word in sentence.words:
-                pos_data.append([f"{idx}번 문장", word.text, POS_match.get(word.pos, word.pos), word.lemma])
+                pos_data.append([f"{idx}번 문장", word.text, word.lemma, POS_match.get(word.pos, word.pos), word.pos])
 
-        # 문장별 의존 구문 분석 데이터
+        # 의존 구문 분석 데이터
         deprel_data = []
         for idx, sentence in enumerate(doc.sentences, start=1):
             for word in sentence.words:
                 head_word = sentence.words[word.head - 1].text if word.head > 0 else 'ROOT'
-                deprel_data.append([f"{idx}번 문장", word.text, head_word, deprel_match.get(word.deprel, word.deprel)])
+                deprel_data.append([f"{idx}번 문장", word.text, head_word, deprel_match.get(word.deprel, word.deprel), word.deprel])
 
-        # 문장별 NER (명명된 개체 인식) 데이터
+        # 명명된 개체 인식(NER) 데이터
         ner_data = []
         for sentence in doc.sentences:
             for ent in sentence.ents:
-                ner_data.append([ent.text, NER_match.get(ent.type, ent.type)])
+                ner_data.append([ent.text, NER_match.get(ent.type, ent.type), ent.type])
 
         # 품사 태깅 표 출력
         if pos_data:
             st.subheader("품사 태깅")
-            pos_df = pd.DataFrame(pos_data, columns=["문장", "단어", "품사", "표제어"])
+            pos_df = pd.DataFrame(pos_data, columns=["문장", "단어", "표제어", "품사", "품사 코드"])
             st.dataframe(pos_df)
 
         # 의존 구문 분석 표 출력
         if deprel_data:
             st.subheader("의존 구문 분석")
-            deprel_df = pd.DataFrame(deprel_data, columns=["문장", "단어", "헤드 단어", "의존 관계"])
+            deprel_df = pd.DataFrame(deprel_data, columns=["문장", "단어", "헤드 단어", "의존 관계", "의존 관계 코드"])
             st.dataframe(deprel_df)
 
         # 명명된 개체 인식 표 출력
         if ner_data:
             st.subheader("명명된 개체 인식 (NER)")
-            ner_df = pd.DataFrame(ner_data, columns=["엔티티", "라벨"])
+            ner_df = pd.DataFrame(ner_data, columns=["엔티티", "라벨", "코드"])
             st.dataframe(ner_df)
 
-# 추가 설명
+        # 의존 구문 트리 시각화 (NetworkX와 matplotlib을 이용한 시각화)
+        def plot_dependency_tree(sentence):
+            # 의존 관계를 트리 구조로 그리기
+            G = nx.DiGraph()
+            for word in sentence.words:
+                G.add_node(word.id, label=word.text)
+                if word.head > 0:
+                    G.add_edge(word.head, word.id)
+            
+            pos = nx.spring_layout(G)  # 레이아웃
+            labels = nx.get_node_attributes(G, 'label')
+
+            plt.figure(figsize=(10, 8))
+            nx.draw(G, pos, with_labels=True, labels=labels, node_size=2000, node_color='skyblue', font_size=12, font_weight='bold', arrows=True)
+            st.pyplot(plt)
+
+        # 첫 번째 문장의 의존 구문 트리 시각화 (만약 문장이 여러 개 있으면 첫 번째 문장만 시각화)
+        if doc.sentences:
+            plot_dependency_tree(doc.sentences[0])
+
+# 설명 추가
 st.markdown("""
-### 표제어:
-- 표제어는 단어의 기본형(사전적 형태)을 의미합니다.
-- 예: 'running' -> 'run', 'better' -> 'good'
+### 네덜란드어 문법 학습 팁
+- **의존 구문 분석**은 문장에서 각 단어가 다른 단어와 어떻게 연결되는지 이해하는 데 중요한 도구입니다.
+- **명명된 개체 인식(NER)**은 문장에서 사람, 장소, 날짜 등 중요한 정보를 추출하는 데 유용합니다.
 """)
