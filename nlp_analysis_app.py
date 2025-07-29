@@ -1,6 +1,10 @@
 import stanza
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import networkx as nx
+from io import BytesIO
+
 
 # 한국어 모델 다운로드 및 파이프라인 설정
 nlp = stanza.Pipeline('nl')
@@ -91,36 +95,33 @@ if user_input:
         # 텍스트 분석
         doc = nlp(user_input)
 
-        # 품사 태깅 데이터
-        pos_data = []
-        for idx, sentence in enumerate(doc.sentences, start=1):
+        # 문장별 품사 태깅과 의존 구문 분석 데이터를 바로 통합하여 저장
+        merged_data = []
+        for sentence in doc.sentences:
             for word in sentence.words:
-                pos_data.append([f"{idx}번 문장", word.text, word.lemma, POS_match.get(word.pos, word.pos), word.pos])
-
-        # 의존 구문 분석 데이터
-        deprel_data = []
-        for idx, sentence in enumerate(doc.sentences, start=1):
-            for word in sentence.words:
+                # 품사와 의존 구문 분석을 함께 바로 저장
                 head_word = sentence.words[word.head - 1].text if word.head > 0 else 'ROOT'
-                deprel_data.append([f"{idx}번 문장", word.text, head_word, deprel_match.get(word.deprel, word.deprel), word.deprel])
+                merged_data.append([
+                    word.text,  # 단어
+                    word.lemma,  # 표제어
+                    POS_match.get(word.pos, word.pos),  # 품사
+                    word.pos,  # 품사 코드
+                    head_word,  # 헤드 단어
+                    deprel_match.get(word.deprel, word.deprel),  # 의존 관계
+                    word.deprel  # 의존 관계 코드
+                ])
 
-        # 명명된 개체 인식(NER) 데이터
+        if merged_data:
+            # 통합된 데이터프레임 생성
+            merged_df = pd.DataFrame(merged_data, columns=["단어", "표제어", "품사", "품사 코드", "헤드 단어", "의존 관계", "의존 관계 코드"])
+            st.subheader("문장 분석 통합 표")
+            st.dataframe(merged_df)
+
+         # 명명된 개체 인식 (NER) 부분 데이터 처리
         ner_data = []
         for sentence in doc.sentences:
             for ent in sentence.ents:
-                ner_data.append([ent.text, NER_match.get(ent.type, ent.type), ent.type])
-
-        # 품사 태깅 표 출력
-        if pos_data:
-            st.subheader("품사 태깅")
-            pos_df = pd.DataFrame(pos_data, columns=["문장", "단어", "표제어", "품사", "품사 코드"])
-            st.dataframe(pos_df)
-
-        # 의존 구문 분석 표 출력
-        if deprel_data:
-            st.subheader("의존 구문 분석")
-            deprel_df = pd.DataFrame(deprel_data, columns=["문장", "단어", "헤드 단어", "의존 관계", "의존 관계 코드"])
-            st.dataframe(deprel_df)
+                ner_data.append([ent.text, NER_match.get(ent.type, ent.type), ent.type])  # 엔티티, 라벨, 코드
 
         # 명명된 개체 인식 표 출력
         if ner_data:
@@ -128,25 +129,6 @@ if user_input:
             ner_df = pd.DataFrame(ner_data, columns=["엔티티", "라벨", "코드"])
             st.dataframe(ner_df)
 
-        # 의존 구문 트리 시각화 (NetworkX와 matplotlib을 이용한 시각화)
-        def plot_dependency_tree(sentence):
-            # 의존 관계를 트리 구조로 그리기
-            G = nx.DiGraph()
-            for word in sentence.words:
-                G.add_node(word.id, label=word.text)
-                if word.head > 0:
-                    G.add_edge(word.head, word.id)
-            
-            pos = nx.spring_layout(G)  # 레이아웃
-            labels = nx.get_node_attributes(G, 'label')
-
-            plt.figure(figsize=(10, 8))
-            nx.draw(G, pos, with_labels=True, labels=labels, node_size=2000, node_color='skyblue', font_size=12, font_weight='bold', arrows=True)
-            st.pyplot(plt)
-
-        # 첫 번째 문장의 의존 구문 트리 시각화 (만약 문장이 여러 개 있으면 첫 번째 문장만 시각화)
-        if doc.sentences:
-            plot_dependency_tree(doc.sentences[0])
 
 # 설명 추가
 st.markdown("""
