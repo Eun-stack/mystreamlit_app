@@ -7,4 +7,5 @@ beautifulsoup4
 requests
 lxml
 PyMuPDF
+stanza
 Pillow
