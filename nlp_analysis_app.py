@@ -25,6 +25,7 @@ POS_match = {
 deprel_match = {
     "case" : "격",
     "obl" :"부사",
+    "obj" : "목적어",
     "aux": "보조 동사",
     "det":"한정사",
     "advmod":"형용사/부사의 수식",
@@ -32,21 +33,32 @@ deprel_match = {
     "nmod" :"명사의 명사 수식",
     "nsubj":"주어",
     "compound:prt":"구성요소",
-    "fixed":"정관사와 명사가 고정된 구문 패턴을 이루는 경우",
+    "fixed":"정관사 + 명사",
     "root":"핵심 동사",
     "amod":"형용사의 명사 수식",
     "cc" :"등위접속사",
     "conj":"접속된 명사",
     "punct":"구두점",
     "parataxis":"병렬 관계",
-    "appos":"동격 관계"
+    "appos":"동격 관계",
+    "xcomp" :"열린 보어",
+    "cop" : "연결 동사",
+    "flat" : "구성 요소",
+    "obl:arg" : "외적 인수",
+    "marker" : "절 시작 표지",
+    "advcl" : "부사절",
+    "csubj" : "절 주어",
+    "aux:pass" : "수동태 보조 동사",
+    "nmod" : "소유격 명사 수식어",
+    "nsujb:pass" : "수동태 주어",
+    "acl" : "형용사절"
 }
 
 # NER (명명된 개체 인식) 매핑
 NER_match = {
     "LOC" : "장소",
     "GPE" : "국가, 도시",
-    "PERSON" : "사람[의 이름]",
+    "PER" : "사람[의 이름]",
     "ORG" : "단체",
     "DATE" : "일시",
     "TIME" : "시각",
@@ -61,7 +73,9 @@ NER_match = {
     "NORP" : "국적,종교,정치적집단",
     "EVENT" : "행사",
     "ADDRESS" :"주소",
-    "EMAIL" : "이메일주소"
+    "EMAIL" : "이메일주소",
+    "MISC" : "기타"
+
 }
 
 # Streamlit 페이지 설정
