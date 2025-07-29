@@ -23,11 +23,11 @@ POS_match = {
 
 # 의존 구문 분석 매핑
 deprel_match = {
-    "case" : "격을 나타냄",
+    "case" : "격",
     "obl" :"부사",
     "aux": "보조 동사",
     "det":"한정사",
-    "advmod":"형용사나 부사가 다른 단어를 수식",
+    "advmod":"형용사/부사의 수식",
     "nummod":"수사",
     "nmod" :"명사의 명사 수식",
     "nsubj":"주어",
@@ -79,35 +79,38 @@ if user_input:
         # 텍스트 분석
         doc = nlp(user_input)
 
-        # 품사 태깅을 위한 데이터프레임
+        # 문장별 품사 태깅 데이터
         pos_data = []
-        for sentence in doc.sentences:
+        for idx, sentence in enumerate(doc.sentences, start=1):
             for word in sentence.words:
-                pos_data.append([word.text, POS_match.get(word.pos, word.pos), word.lemma])
+                pos_data.append([f"{idx}번 문장", word.text, POS_match.get(word.pos, word.pos), word.lemma])
 
-        # 의존 구문 분석을 위한 데이터프레임
+        # 문장별 의존 구문 분석 데이터
         deprel_data = []
-        for sentence in doc.sentences:
+        for idx, sentence in enumerate(doc.sentences, start=1):
             for word in sentence.words:
-                deprel_data.append([word.text, word.head, deprel_match.get(word.deprel, word.deprel)])
+                head_word = sentence.words[word.head - 1].text if word.head > 0 else 'ROOT'
+                deprel_data.append([f"{idx}번 문장", word.text, head_word, deprel_match.get(word.deprel, word.deprel)])
 
-        # NER (명명된 개체 인식) 결과를 위한 데이터프레임
+        # 문장별 NER (명명된 개체 인식) 데이터
         ner_data = []
         for sentence in doc.sentences:
             for ent in sentence.ents:
                 ner_data.append([ent.text, NER_match.get(ent.type, ent.type)])
 
-        # 각 분석 결과를 Streamlit에서 표로 출력
+        # 품사 태깅 표 출력
         if pos_data:
             st.subheader("품사 태깅")
-            pos_df = pd.DataFrame(pos_data, columns=["단어", "품사", "표제어"])
+            pos_df = pd.DataFrame(pos_data, columns=["문장", "단어", "품사", "표제어"])
             st.dataframe(pos_df)
 
+        # 의존 구문 분석 표 출력
         if deprel_data:
             st.subheader("의존 구문 분석")
-            deprel_df = pd.DataFrame(deprel_data, columns=["단어", "헤드", "의존 관계"])
+            deprel_df = pd.DataFrame(deprel_data, columns=["문장", "단어", "헤드 단어", "의존 관계"])
             st.dataframe(deprel_df)
 
+        # 명명된 개체 인식 표 출력
         if ner_data:
             st.subheader("명명된 개체 인식 (NER)")
             ner_df = pd.DataFrame(ner_data, columns=["엔티티", "라벨"])
