@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from io import BytesIO
 
+#streamlit run nlp_analysis_app.py
+
 
 # 한국어 모델 다운로드 및 파이프라인 설정
 nlp = stanza.Pipeline('nl')
@@ -41,7 +43,7 @@ deprel_match = {
     "root":"핵심 동사",
     "amod":"형용사의 명사 수식",
     "cc" :"등위접속사",
-    "conj":"접속된 명사",
+    "conj":"병렬 구조의 두 번째 이후 요소",
     "punct":"구두점",
     "parataxis":"병렬 관계",
     "appos":"동격 관계",
@@ -55,7 +57,10 @@ deprel_match = {
     "aux:pass" : "수동태 보조 동사",
     "nmod" : "소유격 명사 수식어",
     "nsujb:pass" : "수동태 주어",
-    "acl" : "형용사절"
+    "acl" : "형용사절",
+    "nmod:poss": "소유 명사 수식어",
+    "acl:relcl": "관계절",
+    "ccomp" : "절 형태 보어"
 }
 
 # NER (명명된 개체 인식) 매핑
@@ -87,7 +92,7 @@ st.set_page_config(page_title="네덜란드어 문장 분석기", layout="wide")
 st.title("네덜란드어 문장 분석기")
 
 # 사용자가 문장 입력
-user_input = st.text_area("분석할 네덜란드어 문장을 입력하세요.", height=200)
+user_input = st.text_area("분석할 네덜란드어 문장을 입력한 후 Ctrl+Enter로 실행하세요. 여러 문장을 한 번에 분석할 수 있지만, 시간이 소요됩니다.", height=200)
 
 # 입력이 있으면 분석
 if user_input:
@@ -95,28 +100,29 @@ if user_input:
         # 텍스트 분석
         doc = nlp(user_input)
 
-        # 문장별 품사 태깅과 의존 구문 분석 데이터를 바로 통합하여 저장
-        merged_data = []
-        for sentence in doc.sentences:
+        # 문장 단위로 테이블 출력
+        for i, sentence in enumerate(doc.sentences, start=1):
+            sentence_data = []
             for word in sentence.words:
-                # 품사와 의존 구문 분석을 함께 바로 저장
                 head_word = sentence.words[word.head - 1].text if word.head > 0 else 'ROOT'
-                merged_data.append([
-                    word.text,  # 단어
-                    word.lemma,  # 표제어
-                    POS_match.get(word.pos, word.pos),  # 품사
-                    word.pos,  # 품사 코드
-                    head_word,  # 헤드 단어
-                    deprel_match.get(word.deprel, word.deprel),  # 의존 관계
-                    word.deprel  # 의존 관계 코드
+                sentence_data.append([
+                    word.text,
+                    word.lemma,
+                    POS_match.get(word.pos, word.pos),
+                    word.pos,
+                    head_word,
+                    deprel_match.get(word.deprel, word.deprel),
+                    word.deprel
                 ])
 
-        if merged_data:
-            # 통합된 데이터프레임 생성
-            merged_df = pd.DataFrame(merged_data, columns=["단어", "표제어", "품사", "품사 코드", "헤드 단어", "의존 관계", "의존 관계 코드"])
-            st.subheader("문장 분석 통합 표")
-            st.dataframe(merged_df)
-
+            if sentence_data:
+                st.subheader(f"문장 {i}: {sentence.text}")
+                df = pd.DataFrame(
+                    sentence_data,
+                    columns=["단어", "표제어", "품사", "품사 코드", "헤드 단어", "의존 관계", "의존 관계 코드"]
+                )
+                st.dataframe(df)
+        
          # 명명된 개체 인식 (NER) 부분 데이터 처리
         ner_data = []
         for sentence in doc.sentences:
@@ -132,7 +138,12 @@ if user_input:
 
 # 설명 추가
 st.markdown("""
-### 네덜란드어 문법 학습 팁
-- **의존 구문 분석**은 문장에서 각 단어가 다른 단어와 어떻게 연결되는지 이해하는 데 중요한 도구입니다.
-- **명명된 개체 인식(NER)**은 문장에서 사람, 장소, 날짜 등 중요한 정보를 추출하는 데 유용합니다.
+
+            
+            
+
+### 언어 분석 모델: stanza
+- **의존 구문 분석** : 문장에서 각 성분이 어떤 의존 관계를 이루는지 분석하는 학문
+- **명명된 개체 인식(NER)** : 문장에서 사람, 장소, 날짜 등 중요한 정보를 추론하여 분류
+    - 헤드 단어(Head Word) : 다른 단어들이 의존하는 중심 단어
 """)
