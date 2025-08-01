@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import stanza
 import os
 
 def is_stanza_model_downloaded(lang_code='nl'):
@@ -15,7 +14,6 @@ def is_stanza_model_downloaded(lang_code='nl'):
     return os.path.isdir(model_path) and bool(os.listdir(model_path))
 
 # Streamlit 앱 시작
-st.set_page_config(page_title="Stanza 모델 확인기", layout="centered")
 st.title("🇳🇱 Stanza 네덜란드어 모델 확인 및 다운로드")
 
 if is_stanza_model_downloaded('nl'):

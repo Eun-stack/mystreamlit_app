@@ -39,8 +39,3 @@ This software uses the following open-source libraries:
 10. Pillow (11.3.0)
    - License: MIT-CMU License
    - https://spdx.org/licenses/MIT-CMU.html
-
-
-11. fitz (PyPI package "fitz")
-  - License: BSD‑3‑Clause License (BSD License)
-  - See `third_party_licenses/fitz/LICENSE` for full text
