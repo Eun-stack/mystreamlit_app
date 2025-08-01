@@ -3,6 +3,26 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+def is_stanza_model_downloaded(lang_code='nl'):
+    """
+    Stanza 언어 모델이 로컬에 이미 존재하는지 확인합니다.
+    
+    lang_code: 언어 코드 (예: 'nl', 'en', 'ko')
+    """
+    model_dir = os.path.join(stanza.download_directory, lang_code)
+    return os.path.isdir(model_dir) and bool(os.listdir(model_dir))
+
+# 사용 예
+if is_stanza_model_downloaded('nl'):
+    print("네덜란드어 모델이 이미 다운로드되어 있습니다.")
+else:
+    print("네덜란드어 모델이 없습니다. 다운로드가 필요합니다.")
+
+
+if not is_stanza_model_downloaded('nl'):
+    stanza.download('nl')  # 필요 시에만 다운로드
 
 # 네덜란드어 모델 초기화 (캐싱)
 @st.cache_resource
@@ -30,7 +50,10 @@ deprel_match = {
     "nmod:poss":"소유격 명사 수식어",
     "aux": "보조 동사",
     "flat" : "구성 요소",
-    "compound:prt":"분리전철"
+    "compound:prt":"분리전철",
+    "nummod":"수사의 명사 수식",
+    "nsubj:pass" : "수동태 명사 주어",
+    "aux:pass" : "수동태 조동사"
 }
 
 # 30가지 색상 리스트 준비 (matplotlib tab20 + 추가 10가지)
@@ -58,7 +81,7 @@ st.set_page_config(page_title="네덜란드어 의존 구문 분석기", layout=
 st.title("🇳🇱 네덜란드어 의존 구문 분석기")
 
 # 사용자 입력
-user_input = st.text_area("🔍 분석할 네덜란드어 문장을 입력하세요:", height=150)
+user_input = st.text_area("분석할 네덜란드어 문장을 입력한 후 Ctrl+Enter로 분석을 시작하세요.", height=150)
 
 # 분석 처리
 if user_input:
