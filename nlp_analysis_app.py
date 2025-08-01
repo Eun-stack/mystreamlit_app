@@ -8,22 +8,25 @@ import os
 
 def is_stanza_model_downloaded(lang_code='nl'):
     """
-    Stanza 언어 모델이 다운로드되어 있는지 확인
+    Stanza 언어 모델이 다운로드되어 있는지 확인합니다.
     """
     home = os.path.expanduser("~")
     model_path = os.path.join(home, 'stanza_resources', lang_code)
     return os.path.isdir(model_path) and bool(os.listdir(model_path))
 
-# 사용 예
+# Streamlit 앱 시작
+st.set_page_config(page_title="Stanza 모델 확인기", layout="centered")
+st.title("🇳🇱 Stanza 네덜란드어 모델 확인 및 다운로드")
+
 if is_stanza_model_downloaded('nl'):
-    print("✅ 네덜란드어 모델이 이미 다운로드되어 있습니다.")
+    st.success("✅ 네덜란드어 모델이 이미 다운로드되어 있습니다.")
 else:
-    print("❌ 모델이 없습니다. 다운로드가 필요합니다.")
-    stanza.download('nl')
-
-
-if not is_stanza_model_downloaded('nl'):
-    stanza.download('nl')  # 필요 시에만 다운로드
+    st.warning("⚠️ 네덜란드어 모델이 없습니다. 다운로드가 필요합니다.")
+    
+    if st.button("📥 모델 다운로드"):
+        with st.spinner("네덜란드어 모델을 다운로드 중입니다..."):
+            stanza.download('nl')
+        st.success("✅ 다운로드 완료! 앱을 새로고침하세요.")
 
 # 네덜란드어 모델 초기화 (캐싱)
 @st.cache_resource
