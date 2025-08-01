@@ -3,22 +3,23 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import stanza
 import os
 
 def is_stanza_model_downloaded(lang_code='nl'):
     """
-    Stanza 언어 모델이 로컬에 이미 존재하는지 확인합니다.
-    
-    lang_code: 언어 코드 (예: 'nl', 'en', 'ko')
+    Stanza 언어 모델이 다운로드되어 있는지 확인
     """
-    model_dir = os.path.join(stanza.download_directory, lang_code)
-    return os.path.isdir(model_dir) and bool(os.listdir(model_dir))
+    home = os.path.expanduser("~")
+    model_path = os.path.join(home, 'stanza_resources', lang_code)
+    return os.path.isdir(model_path) and bool(os.listdir(model_path))
 
 # 사용 예
 if is_stanza_model_downloaded('nl'):
-    print("네덜란드어 모델이 이미 다운로드되어 있습니다.")
+    print("✅ 네덜란드어 모델이 이미 다운로드되어 있습니다.")
 else:
-    print("네덜란드어 모델이 없습니다. 다운로드가 필요합니다.")
+    print("❌ 모델이 없습니다. 다운로드가 필요합니다.")
+    stanza.download('nl')
 
 
 if not is_stanza_model_downloaded('nl'):
