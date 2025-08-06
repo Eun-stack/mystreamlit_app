@@ -1,117 +1,208 @@
 # 필요한 라이브러리 import
 import streamlit as st
-from dotenv import load_dotenv 
+import requests
 import os
 import google.generativeai as genai
 
-load_dotenv()
-API_KEY = os.environ.get('GEMINI_API_KEY')
-
-genai.configure(api_key=API_KEY)
-
-st.session_state['novel_genre'] = None
-st.session_state['novel_background'] = None
-st.session_state['hero'] = None
-st.session_state['math_grade'] = None
-st.session_state['english_grade'] = None
-
-if 'novel_genre' not in st.session_state :
-    st.session_state['novel_genre'] = None
-if 'novel_background' not in st.session_state :
-   st.session_state['novel_background'] = None
-if 'hero' not in st.session_state :
-   st.session_state['hero'] = None
-if 'math_grade' not in st.session_state :
-    st.session_state['math_grade'] = None
-if 'english_grade' not in st.session_state :
-    st.session_state['english_grade'] = None
-
+# 페이지 설정
 st.set_page_config(page_title="소설 프롤로그 생성기", layout="centered")
-st.title("📖 AI 소설 프롤로그 생성기")
-st.markdown("---")
 
-# Gemini API 키 입력 필드
-st.subheader("1. Gemini API 키 입력")
-gemini_api_key = st.text_input(
-    "여기에 Gemini API 키를 입력하세요:",
-    type="password", # API 키는 보안을 위해 비밀번호처럼 가려지게 합니다.
+# 사이드바 메뉴
+st.sidebar.title("📚 메뉴")
+menu = st.sidebar.radio("이동할 화면을 선택하세요", ["초기 세팅", "히스토리 확인"])
+
+# Gemini API Key 입력
+gemini_api_key = st.sidebar.text_input(
+    "🔑 Gemini API Key", 
+    type="password", 
     help="Google AI Studio에서 발급받은 API 키를 입력해주세요."
 )
-st.markdown("---")
+model_choice = st.sidebar.selectbox(
+    '🧠 사용할 모델:',
+    ('gemini-1.5-flash', 'gemini-2.5-flash')
+)
 
-with st.expander("⚙️ 설정 (필수 사항)"):
-    novel_genre = st.selectbox(
-        "장르 선택:",
-        [ "판타지", "무협", "로맨스", "회귀물" ],
-        index=0
-    )
-    st.session_state['novel_genre'] = novel_genre
-    
-    novel_background = st.selectbox(
-        "세계관(배경) 선택:",
-        [ "현대", "고대 중국", "서양 왕정" ],
-        index=0
-    )
-    st.session_state['novel_background'] = novel_background
+# 모델 초기화
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
+    model = genai.GenerativeModel(model_choice)
+    system_prompt = "당신은 초인기 소설 작가입니다."
 
-    hero_character = st.selectbox(
-        "주인공 성격 선택:",
-        [ "냉혹", "포용", "밝음", "배려" ],
-        index=0
-    )
-    st.session_state['hero_character'] = hero_character
+# 세션 상태 초기화
+defaults = {
+    'history': [],
+    'novel_genre': [],
+    'background_time': [],
+    'background_space': [],
+    'background_social': [],
+    'literary_style': [],
+    'theme': [],
+    'main_character_background': [],
+    'main_character_appearance': [],
+    'main_character_ability': [],
+    'main_character_superpower': [],
+    'main_character_personality': [],
+    'main_character_relationship': []
+}
+for key, default in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-    hero_appearance = st.selectbox(
-        "주인공 외모 선택:",
-        ["미남", "미녀", "추남", "추녀"],
-        index=0
-    )
-    st.session_state['hero_appearance'] = hero_appearance
+# =============================
+# 화면 1: 초기 세팅 및 생성 기능
+# =============================
+if menu == "초기 세팅":
+    st.title("📖 AI 소설 프롤로그 생성기")
+    st.markdown("---")
 
-    hero_relationship = st.selectbox(
-        "주인공 상태 선택:",
-        [ "유일한 친구로부터 배신받음", "무일푼" ],
-        index=0
-    )
-    st.session_state['hero_relationship'] = hero_relationship
+    # 메타데이터 입력
+    with st.expander("메타데이터"):
+        st.session_state['perspective'] = st.selectbox(
+            "시점 선택",
+            ["1인칭 주인공 시점", "1인칭 관찰자 시점", "3인칭 관찰자 시점", "전지적 작가 시점"],
+            index=0
+        )
 
-    hero_relationship = st.selectbox(
-        "주인공 주변 관계 선택:",
-        [ "부모 동거", "형제 존재", "친구 없음" ],
-        index=0
-    )
-    st.session_state['hero_relationship'] = hero_relationship
+        st.session_state['novel_genre'] = st.multiselect(
+            "장르 선택 (다중 선택 가능):",
+            ["현실주의", "로맨스", "과학", "판타지", "추리", "공포", "역사", "디스토피아", "모험", "게임", "전쟁", "오컬트"],
+            default=st.session_state['novel_genre']
+        )
 
-    hero_ability = st.selectbox(
-        "주인공 능력 선택:",
-        ["제작 장인", "네크로맨서", "격투 장인", "불운"],
-        index=0
-    )
-    st.session_state['hero_ability'] = hero_ability
+        st.session_state['literary_style'] = st.multiselect(
+            "문체 (다중 선택 가능):",
+            ["격식", "비격식", "서술성", "대화성", "서정적", "시적", "회화적", "극적"],
+            default=st.session_state['literary_style']
+        )
 
-model = genai.GenerativeModel('gemini-2.5-flash')
-system_prompt = "당신은 초인기 판타지 소설 작가입니다."
+        st.session_state['theme'] = st.multiselect(
+            "주제 (다중 선택 가능):",
+            ["사랑", "정체성", "사회비판", "존재", "자유", "선악", "죽음", "인간성", "자연", "운명", "가족", "희생", "희망", "환상", "기억", "기술찬양"],
+            default=st.session_state['theme']
+        )
 
-chat = model.start_chat(history=[])
+    # 세계관 설정
+    with st.expander("세계관"):
+        st.session_state['background_time'] = st.multiselect(
+            "시간적 배경 (다중 선택 가능)",
+            ["고대 이집트", "고대 그리스", "고대 로마", "중세유럽", "르네상스 시대", "조선시대", "대항해 시대", 
+             "근대", "제1차 세계대전", "제2차 세계대전", "현대", "미래", "가상 현실"],
+            default=st.session_state['background_time']
+        )
 
-response = model.generate_content([
-    system_prompt,
-    st.session_state.pdf_file,
-    prompt
-])
+        st.session_state['background_space'] = st.multiselect(
+            "공간적 배경 (다중 선택 가능)",
+            ["우주", "행성", "국가", "도시", "마을", "산", "해안", "심해", "하늘", "지하", "사막", "숲", 
+             "극지방", "고대 유적지", "판타지세계"],
+            default=st.session_state['background_space']
+        )
 
+        st.session_state['background_social'] = st.multiselect(
+            "사회적 환경 (다중 선택 가능)",
+            ["독재", "민주주의", "공산주의", "계몽주의", "제국주의", "전쟁", "자본주의", "공동체주의", 
+             "유토피아", "디스토피아", "반과학주의", "종교", "환경", "아포칼립스", "인류멸망"],
+            default=st.session_state['background_social']
+        )
 
+    # 주인공 설정
+    with st.expander("주인공 설정"):
+        name = st.text_input("이름을 입력하세요")
+        age = st.number_input("나이를 입력하세요", min_value=0, max_value=100)
+        job = st.text_input("직업을 입력하세요")
+        gender = st.selectbox("성별을 선택하세요", ["남성", "여성", "기타", "선택하지 않음"])
 
+        st.session_state['main_character_background'] = st.multiselect(
+            "주인공 배경 (다중 선택 가능)",
+            ["부모없음", "조부모", "학교폭력", "가정폭력", "연인과헤어짐", "부유함", "평범함", 
+             "고아원", "이민", "빈곤", "귀족", "평안한 가족", "범죄"],
+            default=st.session_state['main_character_background']
+        )
 
+        st.session_state['main_character_appearance'] = st.multiselect(
+            "외모 (다중 선택 가능)",
+            ["장발", "단발", "금발", "흑발", "장신", "단신", "안경", "노인", "장년", "청년", 
+             "청소년", "미성년", "유아", "영아"],
+            default=st.session_state['main_character_appearance']
+        )
 
+        st.session_state['main_character_ability'] = st.multiselect(
+            "능력 (다중 선택 가능)",
+            ["힘이 셈", "힘이 약함", "머리가 좋음", "머리가 나쁨", "손재주가 좋음", "손재주가 나쁨", 
+             "빠름", "느림", "기억력이 좋음", "잘 잊어버림", "말재주가 좋음", "말재주가 나쁨", 
+             "기계를 잘 다룸", "기계치"],
+            default=st.session_state['main_character_ability']
+        )
 
-# 텍스트 출력
-st.write("안녕하세요!")
+        st.session_state['main_character_superpower'] = st.multiselect(
+            "초능력 (다중 선택 가능)",
+            ["물", "불", "번개", "어둠", "바람", "땅", "빛", "부활", "초스피드", "초감각", "힘", 
+             "정신조작", "소환수", "순간이동", "검술", "기", "에너지조작", "비행"],
+            default=st.session_state['main_character_superpower']
+        )
 
-# 버튼 추가
-if st.button("클릭해보세요"):
-    st.write("버튼이 눌렸네요!")
+        st.session_state['main_character_personality'] = st.multiselect(
+            "성격 (다중 선택 가능)",
+            ["소심한", "대담한", "말이 많은", "말이 적은", "적극적인", "소극적인", "낙천적인", "비판적인", 
+             "자기중심적인", "이타적인", "온화한", "고집이 센", "완벽주의의", "의존적인", "상냥한", 
+             "두려움이 많은", "모험적인", "포용하는", "둔한", "민감한", "냉혹한", "밝은", "배려하는"],
+            default=st.session_state['main_character_personality']
+        )
 
-# 사이드바 추가
-st.sidebar.header("사이드바")
-st.sidebar.text("여기는 사이드바 영역입니다.")
+        st.session_state['main_character_relationship'] = st.multiselect(
+            "주변 관계 (다중 선택 가능)",
+            ["부모", "형제", "친구", "악당", "조력자", "스승", "제자", "배우자", "연인"],
+            default=st.session_state['main_character_relationship']
+        )
+
+    # 프롤로그 생성 버튼
+    if st.button("소설 프롤로그 생성하기 ✨"):
+        if not gemini_api_key:
+            st.error("⚠️ Gemini API 키가 설정되지 않아 프롤로그를 생성할 수 없습니다.")
+        else:
+            user_prompt_to_llm = f"""당신은 초인기 소설 작가입니다.
+다음 정보를 기반으로 3500자 이내의 소설 프롤로그 1화를 작성해주세요.
+
+1. 시점: {st.session_state['perspective']}
+2. 장르: {", ".join(st.session_state['novel_genre'])}
+3. 문체: {", ".join(st.session_state['literary_style'])}
+4. 주제: {", ".join(st.session_state['theme'])}
+5. 시간적 배경: {", ".join(st.session_state['background_time'])}
+6. 공간적 배경: {", ".join(st.session_state['background_space'])}
+7. 사회적 환경: {", ".join(st.session_state['background_social'])}
+8. 주인공 이름: {name}, 나이: {age}, 성별: {gender}, 직업: {job}
+9. 주인공 배경: {", ".join(st.session_state['main_character_background'])}
+10. 주인공 외모: {", ".join(st.session_state['main_character_appearance'])}
+11. 주인공 능력: {", ".join(st.session_state['main_character_ability'])}
+12. 주인공 초능력: {", ".join(st.session_state['main_character_superpower'])}
+13. 주인공 성격: {", ".join(st.session_state['main_character_personality'])}
+14. 주인공 주변 관계: {", ".join(st.session_state['main_character_relationship'])}
+"""
+            with st.spinner("프롤로그를 생성 중입니다... 잠시만 기다려주세요."):
+                try:
+                    response = model.generate_content([system_prompt, user_prompt_to_llm])
+                    result_text = response.text
+
+                    # 결과 저장
+                    st.session_state['history'].append(result_text)
+
+                    st.markdown("---")
+                    st.subheader(f"📘 생성된 소설 프롤로그 ({len(st.session_state['history'])}화)")
+                    st.write(result_text)
+
+                except Exception as e:
+                    st.error(f"⚠️ 프롤로그 생성 중 오류가 발생했습니다: {e}")
+
+# =============================
+# 화면 2: 히스토리 확인
+# =============================
+elif menu == "히스토리 확인":
+    st.title("📜 생성된 히스토리")
+
+    if not st.session_state['history']:
+        st.info("아직 생성된 프롤로그가 없습니다.")
+    else:
+        st.markdown("### 📂 생성된 프롤로그 목록")
+        for idx, entry in enumerate(st.session_state['history'], start=1):
+            if st.button(f"{idx:02d}화 보기"):
+                st.markdown(f"#### ✨ {idx:02d}화")
+                st.write(entry)
