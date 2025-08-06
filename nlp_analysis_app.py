@@ -187,7 +187,7 @@ gemini_api_key = st.text_input("Gemini API Key를 입력하세요", type="passwo
 if gemini_api_key:
     genai.configure(api_key=gemini_api_key)
     try:
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         
         # 번역할 문장 입력
         dutch_text_for_translation = st.text_area("번역할 네덜란드어 문장을 입력하세요", height=100)
