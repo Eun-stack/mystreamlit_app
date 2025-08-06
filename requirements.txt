@@ -9,3 +9,4 @@ stanza
 Pillow
 matplotlib
 fitz
+google-generativeai

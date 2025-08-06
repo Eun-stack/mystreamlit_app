@@ -44,3 +44,8 @@ This software uses the following open-source libraries:
 11. fitz (PyPI package "fitz")
   - License: BSD‑3‑Clause License (BSD License)
   - See `third_party_licenses/fitz/LICENSE` for full text
+
+
+12. google-generativeai (0.8.5)
+   - License: Apache Software License (Apache License 2.0)
+   - https://www.apache.org/licenses/LICENSE-2.0

@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import google.generativeai as genai
 
 def is_stanza_model_downloaded(lang_code='nl'):
     """
@@ -117,6 +118,10 @@ if user_input:
                     sentence_data,
                     columns=["단어", "표제어", "품사", "품사 코드", "헤드 단어", "의존 관계", "의존 관계 코드"]
                 )
+                
+                # 인덱스를 1부터 시작하도록 수정
+                df.index = df.index + 1  # 인덱스 값에 1을 더하여 1부터 시작하게 설정
+                
                 st.dataframe(df)
 
             # 시각화
@@ -124,6 +129,11 @@ if user_input:
                 st.markdown("🎯 **의존 구문 시각화**")
 
                 fig, ax = plt.subplots(figsize=(len(word_list) * 2.0, 3))
+
+                # 단어 개수가 15개를 초과하면 시각화 높이를 2배로 설정
+                if len(word_list) > 15:
+                    fig, ax = plt.subplots(figsize=(len(word_list) * 2.0, 6))  # 높이를 2배로 설정
+
                 positions = list(range(len(word_list)))
 
                 # 단어 라벨
@@ -142,12 +152,12 @@ if user_input:
 
                     height = amplitude * np.abs(np.sin(np.pi * (x_vals - min(head, dep)) / (max(head, dep) - min(head, dep))))
 
+                    
                     # root 여부 확인
                     if sentence.words[head].deprel == "root":
                         color = 'red'
                     else:
                         color = get_color_by_distance(amplitude)
-
 
                     if head < dep:
                         linestyle = '--'   # 왼쪽 -> 오른쪽 : 실선
@@ -160,8 +170,45 @@ if user_input:
                 st.pyplot(fig)
 
                 st.markdown("""
-                 **범례**  
+                **범례**  
                 - 실선 : 왼쪽   → 오른쪽  
                 - 점선 : 오른쪽 → 왼쪽  
                 - ROOT에 의존한 단어는 빨간색 선
                 """)
+
+
+# --- Gemini 번역 기능 추가 ---
+st.markdown("---")
+st.header("✨ 네덜란드어 문장 번역 (Gemini Pro)")
+
+# API 키 입력
+gemini_api_key = st.text_input("Gemini API Key를 입력하세요", type="password")
+
+if gemini_api_key:
+    genai.configure(api_key=gemini_api_key)
+    try:
+        model = genai.GenerativeModel('gemini-pro')
+        
+        # 번역할 문장 입력
+        dutch_text_for_translation = st.text_area("번역할 네덜란드어 문장을 입력하세요", height=100)
+        
+        if st.button("🚀 번역하기"):
+            if not dutch_text_for_translation:
+                st.warning("번역할 문장을 입력해주세요.")
+            else:
+                with st.spinner("Gemini가 번역 중입니다..."):
+                    prompt = f"다음 네덜란드어 문장을 자연스러운 한국어로 번역해줘. 문맥을 고려하여 정확하게 번역해줘. 오역은 하지 말아줘.\n네덜란드어: {dutch_text_for_translation}\n한국어:"
+                    
+                    try:
+                        response = model.generate_content(prompt)
+                        translated_text = response.text
+                        st.success("✅ 번역 완료!")
+                        st.markdown(f"**번역 결과:**\n\n> {translated_text}")
+                    except Exception as e:
+                        st.error(f"번역 중 오류가 발생했습니다: {e}")
+                        st.info("API 키가 올바른지 확인하거나, 입력 문장이 부적절한지 확인해주세요.")
+    except Exception as e:
+        st.error(f"API 키 설정에 오류가 있습니다: {e}")
+        st.info("올바른 Gemini API 키를 입력했는지 확인해주세요.")
+else:
+    st.info("번역 기능을 사용하려면 Gemini API 키를 입력하세요.")
