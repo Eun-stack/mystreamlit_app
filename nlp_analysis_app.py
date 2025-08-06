@@ -179,7 +179,7 @@ if user_input:
 
 # --- Gemini 번역 기능 추가 ---
 st.markdown("---")
-st.header("✨ 네덜란드어 문장 번역 (Gemini Pro)")
+st.header("✨ 네덜란드어 문장 번역 (Gemini 2.5-flash)")
 
 # API 키 입력
 gemini_api_key = st.text_input("Gemini API Key를 입력하세요", type="password")
