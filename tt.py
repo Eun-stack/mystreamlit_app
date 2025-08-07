@@ -309,25 +309,25 @@ elif menu == "히스토리 확인":
                 st.write(entry)
 
 # 2. 소설 불러오기 기능 추가
-# ==============================
 if menu == "소설 불러오기":
     st.title("📜 소설 불러오기")
 
     # Supabase 클라이언트 초기화
     client = init_supabase()
 
-    # 소설 제목을 선택할 셀렉트박스 (Distinct로 제목 불러오기)
+    # 소설 제목을 선택할 셀렉트박스 (distinct로 제목 불러오기)
     if 'selected_title' not in st.session_state:
         st.session_state['selected_title'] = ""
 
     # 소설 제목을 불러오는 쿼리 (distinct로 제목 목록만)
     try:
-        response = client.table('stories').select('title').distinct().execute()
+        response = client.table('stories').select('title').execute()
 
         if response.error:
             st.error(f"⚠️ 제목 불러오기 오류: {response.error['message']}")
         else:
-            titles = [row['title'] for row in response.data]
+            # 중복 제거 (set 사용)
+            titles = list(set(row['title'] for row in response.data))
 
             # 제목이 없으면 경고 표시
             if not titles:
