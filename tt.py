@@ -213,7 +213,7 @@ if menu == "초기 세팅":
         )
         
     user_prompt_to_llm = f"""당신은 초인기 소설 작가입니다.
-                다음 정보를 기반으로 2500자 이내의 소설 {len(st.session_state['history'])+1}화를 작성해주세요.
+                아래 정보를 기반으로 2500자 이내의 소설 {len(st.session_state['history'])+1}화를 작성해주세요.
             
 
                 1. 시점: {st.session_state['perspective']}
@@ -337,7 +337,6 @@ if menu == "소설 불러오기":
                 try:
                     response_chapters = client.table('stories').select('chapter').filter('title', 'eq', selected_title).execute()
                     
-                    # 'raise_for_status()' 호출을 삭제합니다.
                     
                     chapters = [row['chapter'] for row in response_chapters.data]
 
@@ -347,7 +346,6 @@ if menu == "소설 불러오기":
                         try:
                             response_content = client.table('stories').select('contents').filter('title', 'eq', selected_title).filter('chapter', 'eq', selected_chapter).execute()
                             
-                            # 'raise_for_status()' 호출을 삭제합니다.
 
                             chapter_content = response_content.data[0]['contents']
                             st.subheader(f"📘 {selected_title} - {selected_chapter}화 내용")
