@@ -47,8 +47,14 @@ else:
     model = None
 
 
+
 # 세션 상태 초기화
 if True:
+
+    # 세션 상태 초기화 (초기값이 없으면 빈 리스트로 설정)
+    if 'history' not in st.session_state:
+        st.session_state['history'] = []
+        
     defaults = {
     'perspective': "1인칭 주인공 시점",  # 시점 기본값
     'novel_genre': ["로맨스", "판타지"],  # 장르 기본값
