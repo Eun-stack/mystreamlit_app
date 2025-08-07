@@ -24,14 +24,12 @@ def save_to_supabase(title, chapter, contents):
         }).execute()
 
         # 응답에서 상태 코드 및 데이터를 확인
-        if response.status_code == 201:
-            # 데이터 삽입 성공
+        if response.data:  # 데이터가 존재하면 성공 처리
             st.success("소설이 Supabase에 성공적으로 저장되었습니다.")
-            st.write("저장된 데이터:", response.data)  # 저장된 데이터 출력 (디버깅용)
-        else:
-            # 응답 실패
-            st.error(f"Supabase 저장 실패: {response.status_code}")
-            st.write("오류 상세:", response.data)  # 오류 상세 출력
+        elif response.error:  # 오류가 존재하면 오류 처리
+            st.error(f"Supabase 저장 실패: {response.error['message']}")
+        else:  # 그 외의 경우
+            st.warning("알 수 없는 오류 발생")
 
     except Exception as e:
         st.error(f"⚠️ Supabase 저장 중 오류가 발생했습니다: {e}")
@@ -75,6 +73,11 @@ else:
 if 'history' not in st.session_state:
     st.session_state['history'] = []
 
+# 소설 제목을 입력하는 텍스트 박스
+if 'novel_title' not in st.session_state:
+    st.session_state['novel_title'] = ""  # 최초값 설정
+
+
 defaults = {
     'perspective': "1인칭 주인공 시점",
     'novel_genre': ["로맨스", "판타지"],
@@ -88,7 +91,7 @@ defaults = {
     'main_character_ability': ["힘이 셈", "기억력이 좋음"],
     'main_character_superpower': ["불", "순간이동"],
     'main_character_personality': ["소심한", "낙천적인"],
-    'main_character_relationship': ["부모", "친구"]
+    'main_character_relationship': ["부모", "친구"],
 }
 
 for key, default in defaults.items():
@@ -106,7 +109,7 @@ if menu == "초기 세팅":
     # 메타데이터 입력
     with st.expander("메타데이터"):
 
-        novel_title = st.text_input("소설 제목을 입력하세요.")
+        novel_title = st.text_input("소설 제목을 입력하세요.", value=st.session_state['novel_title'])
 
         st.session_state['perspective'] = st.selectbox(
             "시점 선택",
