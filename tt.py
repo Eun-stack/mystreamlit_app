@@ -27,7 +27,7 @@ def save_to_supabase(title, chapter, contents):
         if response.status_code == 201:
             st.success("소설이 Supabase에 성공적으로 저장되었습니다.")
         else:
-            st.error(f"Supabase 저장 실패: {response.status_code} - {response.data}")
+            st.error(f"Supabase 저장 실패: {response.get('error') or '알 수 없는 오류'}")
 
     except Exception as e:
         st.error(f"⚠️ Supabase 저장 중 오류가 발생했습니다: {e}")
