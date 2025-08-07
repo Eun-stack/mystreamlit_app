@@ -311,50 +311,44 @@ elif menu == "히스토리 확인":
 # 2. 소설 불러오기 기능 추가
 if menu == "소설 불러오기":
     st.title("📜 소설 불러오기")
-
-    # Supabase 클라이언트 초기화
+    
     client = init_supabase()
 
-    # 소설 제목을 선택할 셀렉트박스 (distinct로 제목 불러오기)
     if 'selected_title' not in st.session_state:
         st.session_state['selected_title'] = ""
 
     try:
         # 소설 제목을 불러오는 쿼리 (distinct로 제목 목록만)
+        # execute() 호출 시 에러가 발생하면 바로 except 블록으로 이동합니다.
         response = client.table('stories').select('title').execute()
-
-        # 예외가 발생할 경우를 처리
-        response.raise_for_status()  # HTTP 오류가 발생하면 예외 발생
-
+        
+        # 'raise_for_status()' 호출을 삭제합니다.
+        
         # 중복 제거 (set 사용)
         titles = list(set(row['title'] for row in response.data))
 
-        # 제목이 없으면 경고 표시
         if not titles:
             st.warning("소설 제목이 없습니다. 소설을 먼저 생성해 주세요.")
         else:
-            # 제목 선택
             selected_title = st.selectbox("소설 제목을 선택하세요.", titles)
             st.session_state['selected_title'] = selected_title
 
             if selected_title:
                 try:
-                    # 선택한 제목에 맞는 챕터를 불러오기
                     response_chapters = client.table('stories').select('chapter').filter('title', 'eq', selected_title).execute()
-                    response_chapters.raise_for_status()
-
+                    
+                    # 'raise_for_status()' 호출을 삭제합니다.
+                    
                     chapters = [row['chapter'] for row in response_chapters.data]
 
-                    # 챕터 선택
                     selected_chapter = st.selectbox("챕터를 선택하세요.", chapters)
 
                     if selected_chapter:
                         try:
-                            # 선택한 챕터의 내용 불러오기
                             response_content = client.table('stories').select('contents').filter('title', 'eq', selected_title).filter('chapter', 'eq', selected_chapter).execute()
-                            response_content.raise_for_status()
+                            
+                            # 'raise_for_status()' 호출을 삭제합니다.
 
-                            # 선택한 챕터의 내용 출력
                             chapter_content = response_content.data[0]['contents']
                             st.subheader(f"📘 {selected_title} - {selected_chapter}화 내용")
                             st.write(chapter_content)
