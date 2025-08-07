@@ -43,7 +43,7 @@ def save_text_to_file(text, file_name, save_path):
     return file_path
 
 # 페이지 설정
-st.set_page_config(page_title="소설 프롤로그 생성기", layout="wide")
+st.set_page_config(page_title="AI 소설 생성기", layout="wide")
 
 # 사이드바 메뉴
 st.sidebar.title("📚 메뉴")
@@ -102,7 +102,7 @@ for key, default in defaults.items():
 # 화면 1: 초기 세팅 및 생성 기능
 # =============================
 if menu == "초기 세팅":
-    st.title("📖 AI 소설 프롤로그 생성기")
+    st.title("📖 AI 소설 생성기")
     st.markdown("---")
 
 
