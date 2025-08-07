@@ -11,3 +11,4 @@ matplotlib
 fitz
 google-generativeai
 transformers
+supabase
