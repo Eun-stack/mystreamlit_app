@@ -10,3 +10,7 @@ Pillow
 matplotlib
 fitz
 google-generativeai
+streamlit==1.18.1
+google-generativeai==0.5.0
+transformers==4.29.2
+torch==2.1.0
