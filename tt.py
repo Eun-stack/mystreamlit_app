@@ -10,25 +10,28 @@ def init_supabase():
     key = st.secrets["supabase"]["key"]
     return create_client(url, key)
 
-# Supabase에 데이터 저장하는 함수
+# Supabase에 저장하는 함수
 def save_to_supabase(title, chapter, contents):
-    supabase_client = init_supabase()
     try:
-        data = {
+        # Supabase 연결
+        client = init_supabase()
+        
+        # 테이블에 저장
+        response = client.table('stories').insert({
             "title": title,
             "chapter": chapter,
             "contents": contents
-        }
-        # 데이터 삽입 요청
-        response = supabase_client.table('stories').insert(data).execute()
-        
-        # 응답 처리
-        if response.get('error') is None:  # 성공적으로 저장되었을 때
-            st.success(f"{title}의 {chapter}화가 Supabase에 저장되었습니다.")
-        else:  # 오류 발생 시
-            st.error(f"⚠️ Supabase 저장 실패: {response['error']['message']}")
+        }).execute()
+
+        # 응답에서 상태 코드 및 데이터를 확인
+        if response.status_code == 201:
+            st.success("소설이 Supabase에 성공적으로 저장되었습니다.")
+        else:
+            st.error(f"Supabase 저장 실패: {response.status_code} - {response.data}")
+
     except Exception as e:
         st.error(f"⚠️ Supabase 저장 중 오류가 발생했습니다: {e}")
+
 
 # 텍스트 파일 저장 함수
 def save_text_to_file(text, file_name, save_path):
