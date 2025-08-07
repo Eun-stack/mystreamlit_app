@@ -50,19 +50,19 @@ else:
 # 세션 상태 초기화
 if True:
     defaults = {
-        'history': [],
-        'novel_genre': [],
-        'background_time': [],
-        'background_space': [],
-        'background_social': [],
-        'literary_style': [],
-        'theme': [],
-        'main_character_background': [],
-        'main_character_appearance': [],
-        'main_character_ability': [],
-        'main_character_superpower': [],
-        'main_character_personality': [],
-        'main_character_relationship': []
+    'perspective': "1인칭 주인공 시점",  # 시점 기본값
+    'novel_genre': ["로맨스", "판타지"],  # 장르 기본값
+    'literary_style': ["격식", "서술성"],  # 문체 기본값
+    'theme': ["사랑", "자유"],  # 주제 기본값
+    'background_time': ["현대"],  # 시간적 배경 기본값
+    'background_space': ["도시", "숲"],  # 공간적 배경 기본값
+    'background_social': ["자본주의"],  # 사회적 환경 기본값
+    'main_character_background': ["부유함"],  # 주인공 배경 기본값
+    'main_character_appearance': ["장발", "청년"],  # 주인공 외모 기본값
+    'main_character_ability': ["힘이 셈", "기억력이 좋음"],  # 주인공 능력 기본값
+    'main_character_superpower': ["불", "순간이동"],  # 주인공 초능력 기본값
+    'main_character_personality': ["소심한", "낙천적인"],  # 주인공 성격 기본값
+    'main_character_relationship': ["부모", "친구"]  # 주인공 주변 관계 기본값
     }
 
     for key, default in defaults.items():
@@ -84,7 +84,7 @@ if menu == "초기 세팅":
         st.session_state['perspective'] = st.selectbox(
             "시점 선택",
             ["1인칭 주인공 시점", "1인칭 관찰자 시점", "3인칭 관찰자 시점", "전지적 작가 시점"],
-            index=0
+            index=["1인칭 주인공 시점", "1인칭 관찰자 시점", "3인칭 관찰자 시점", "전지적 작가 시점"].index(st.session_state['perspective'])
         )
 
         st.session_state['novel_genre'] = st.multiselect(
