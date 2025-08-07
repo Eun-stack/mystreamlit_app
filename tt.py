@@ -47,7 +47,8 @@ st.set_page_config(page_title="소설 프롤로그 생성기", layout="wide")
 
 # 사이드바 메뉴
 st.sidebar.title("📚 메뉴")
-menu = st.sidebar.radio("이동할 화면을 선택하세요", ["초기 세팅", "히스토리 확인"])
+menu = st.sidebar.radio("이동할 화면을 선택하세요", ["초기 세팅", "히스토리 확인", "소설 불러오기"])
+
 
 # Gemini API Key 입력
 gemini_api_key = st.sidebar.text_input(
@@ -306,3 +307,59 @@ elif menu == "히스토리 확인":
             if st.button(f"{idx:02d}화 보기"):
                 st.markdown(f"#### ✨ {idx:02d}화")
                 st.write(entry)
+
+# 2. 소설 불러오기 기능 추가
+# ==============================
+if menu == "소설 불러오기":
+    st.title("📜 소설 불러오기")
+
+    # Supabase 클라이언트 초기화
+    client = init_supabase()
+
+    # 소설 제목을 선택할 셀렉트박스 (Distinct로 제목 불러오기)
+    if 'selected_title' not in st.session_state:
+        st.session_state['selected_title'] = ""
+
+    # 소설 제목을 불러오는 쿼리 (distinct로 제목 목록만)
+    try:
+        response = client.table('stories').select('title').distinct().execute()
+
+        if response.error:
+            st.error(f"⚠️ 제목 불러오기 오류: {response.error['message']}")
+        else:
+            titles = [row['title'] for row in response.data]
+
+            # 제목이 없으면 경고 표시
+            if not titles:
+                st.warning("소설 제목이 없습니다. 소설을 먼저 생성해 주세요.")
+            else:
+                # 제목 선택
+                selected_title = st.selectbox("소설 제목을 선택하세요.", titles)
+                st.session_state['selected_title'] = selected_title
+
+                if selected_title:
+                    # 선택한 제목에 맞는 챕터를 불러오기
+                    response_chapters = client.table('stories').select('chapter').filter('title', 'eq', selected_title).execute()
+
+                    if response_chapters.error:
+                        st.error(f"⚠️ 챕터 불러오기 오류: {response_chapters.error['message']}")
+                    else:
+                        chapters = [row['chapter'] for row in response_chapters.data]
+
+                        # 챕터 선택
+                        selected_chapter = st.selectbox("챕터를 선택하세요.", chapters)
+
+                        if selected_chapter:
+                            # 선택한 챕터의 내용 불러오기
+                            response_content = client.table('stories').select('contents').filter('title', 'eq', selected_title).filter('chapter', 'eq', selected_chapter).execute()
+
+                            if response_content.error:
+                                st.error(f"⚠️ 내용 불러오기 오류: {response_content.error['message']}")
+                            else:
+                                # 선택한 챕터의 내용 출력
+                                chapter_content = response_content.data[0]['contents']
+                                st.subheader(f"📘 {selected_title} - {selected_chapter}화 내용")
+                                st.write(chapter_content)
+
+    except Exception as e:
+        st.error(f"⚠️ 오류가 발생했습니다: {e}")
