@@ -227,6 +227,8 @@ if menu == "초기 세팅":
 
                 try:
                     previous_content = "\n\n".join(st.session_state['history']) if st.session_state['history'] else ""
+                    
+                    # 새로운 프롬프트 생성
                     full_prompt_for_this_turn = f"""
 
 
@@ -256,7 +258,7 @@ if menu == "초기 세팅":
                     result_text = response.text
 
                     # Supabase에 저장
-                    save_to_supabase(novel_title, name, len(st.session_state['history'])+1, result_text)
+                    save_to_supabase(novel_title, len(st.session_state['history'])+1, result_text)
 
                     # 세션 상태에 추가
                     st.session_state['history'].append(result_text)
