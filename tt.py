@@ -319,47 +319,51 @@ if menu == "소설 불러오기":
     if 'selected_title' not in st.session_state:
         st.session_state['selected_title'] = ""
 
-    # 소설 제목을 불러오는 쿼리 (distinct로 제목 목록만)
     try:
+        # 소설 제목을 불러오는 쿼리 (distinct로 제목 목록만)
         response = client.table('stories').select('title').execute()
 
-        if response.error:
-            st.error(f"⚠️ 제목 불러오기 오류: {response.error['message']}")
+        # 예외가 발생할 경우를 처리
+        response.raise_for_status()  # HTTP 오류가 발생하면 예외 발생
+
+        # 중복 제거 (set 사용)
+        titles = list(set(row['title'] for row in response.data))
+
+        # 제목이 없으면 경고 표시
+        if not titles:
+            st.warning("소설 제목이 없습니다. 소설을 먼저 생성해 주세요.")
         else:
-            # 중복 제거 (set 사용)
-            titles = list(set(row['title'] for row in response.data))
+            # 제목 선택
+            selected_title = st.selectbox("소설 제목을 선택하세요.", titles)
+            st.session_state['selected_title'] = selected_title
 
-            # 제목이 없으면 경고 표시
-            if not titles:
-                st.warning("소설 제목이 없습니다. 소설을 먼저 생성해 주세요.")
-            else:
-                # 제목 선택
-                selected_title = st.selectbox("소설 제목을 선택하세요.", titles)
-                st.session_state['selected_title'] = selected_title
-
-                if selected_title:
+            if selected_title:
+                try:
                     # 선택한 제목에 맞는 챕터를 불러오기
                     response_chapters = client.table('stories').select('chapter').filter('title', 'eq', selected_title).execute()
+                    response_chapters.raise_for_status()
 
-                    if response_chapters.error:
-                        st.error(f"⚠️ 챕터 불러오기 오류: {response_chapters.error['message']}")
-                    else:
-                        chapters = [row['chapter'] for row in response_chapters.data]
+                    chapters = [row['chapter'] for row in response_chapters.data]
 
-                        # 챕터 선택
-                        selected_chapter = st.selectbox("챕터를 선택하세요.", chapters)
+                    # 챕터 선택
+                    selected_chapter = st.selectbox("챕터를 선택하세요.", chapters)
 
-                        if selected_chapter:
+                    if selected_chapter:
+                        try:
                             # 선택한 챕터의 내용 불러오기
                             response_content = client.table('stories').select('contents').filter('title', 'eq', selected_title).filter('chapter', 'eq', selected_chapter).execute()
+                            response_content.raise_for_status()
 
-                            if response_content.error:
-                                st.error(f"⚠️ 내용 불러오기 오류: {response_content.error['message']}")
-                            else:
-                                # 선택한 챕터의 내용 출력
-                                chapter_content = response_content.data[0]['contents']
-                                st.subheader(f"📘 {selected_title} - {selected_chapter}화 내용")
-                                st.write(chapter_content)
+                            # 선택한 챕터의 내용 출력
+                            chapter_content = response_content.data[0]['contents']
+                            st.subheader(f"📘 {selected_title} - {selected_chapter}화 내용")
+                            st.write(chapter_content)
+
+                        except Exception as e:
+                            st.error(f"⚠️ 챕터 내용 불러오기 오류: {e}")
+
+                except Exception as e:
+                    st.error(f"⚠️ 챕터 불러오기 오류: {e}")
 
     except Exception as e:
-        st.error(f"⚠️ 오류가 발생했습니다: {e}")
+        st.error(f"⚠️ 소설 제목 불러오기 오류: {e}")
