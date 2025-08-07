@@ -21,7 +21,7 @@ def save_text_to_file(text, file_name, save_path):
 
 
 # 페이지 설정
-st.set_page_config(page_title="소설 프롤로그 생성기", layout="centered")
+st.set_page_config(page_title="소설 프롤로그 생성기", layout="wide")
 
 # 사이드바 메뉴
 st.sidebar.title("📚 메뉴")
@@ -54,7 +54,7 @@ if True:
     # 세션 상태 초기화 (초기값이 없으면 빈 리스트로 설정)
     if 'history' not in st.session_state:
         st.session_state['history'] = []
-        
+
     defaults = {
     'perspective': "1인칭 주인공 시점",  # 시점 기본값
     'novel_genre': ["로맨스", "판타지"],  # 장르 기본값
