@@ -24,10 +24,14 @@ def save_to_supabase(title, chapter, contents):
         }).execute()
 
         # 응답에서 상태 코드 및 데이터를 확인
-        if response.error == 201:
+        if response.status_code == 201:
+            # 데이터 삽입 성공
             st.success("소설이 Supabase에 성공적으로 저장되었습니다.")
+            st.write("저장된 데이터:", response.data)  # 저장된 데이터 출력 (디버깅용)
         else:
-            st.error(f"Supabase 저장 실패: {response.error}")
+            # 응답 실패
+            st.error(f"Supabase 저장 실패: {response.status_code}")
+            st.write("오류 상세:", response.data)  # 오류 상세 출력
 
     except Exception as e:
         st.error(f"⚠️ Supabase 저장 중 오류가 발생했습니다: {e}")
