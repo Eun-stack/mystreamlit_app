@@ -107,10 +107,12 @@ if menu == "초기 세팅":
 
     # 메타데이터 입력
     with st.expander("메타데이터"):
+        # 소설 제목 입력
+        novel_title = st.text_input("소설 제목을 입력하세요.", value=st.session_state['novel_title'])
 
-        if st.session_state['novel_title'] == "":  # 제목이 비어있으면 사용자에게 입력 받기
-            st.session_state['novel_title'] = st.text_input("소설 제목을 입력하세요.")
-            novel_title = st.session_state['novel_title']
+        # 소설 제목이 입력되면 session_state에 저장
+        if novel_title:
+            st.session_state['novel_title'] = novel_title
 
         st.session_state['perspective'] = st.selectbox(
             "시점 선택",
