@@ -20,7 +20,7 @@ def save_to_supabase(name, chapter, contents):
             "chapter": chapter,
             "contents": contents
         }
-        response = supabase_client.table('your_table_name').insert(data).execute()
+        response = supabase_client.table('stories').insert(data).execute()
         if response.status_code == 201:
             st.success(f"소설 {chapter}화가 Supabase에 저장되었습니다.")
         else:
@@ -92,6 +92,7 @@ for key, default in defaults.items():
 if menu == "초기 세팅":
     st.title("📖 AI 소설 프롤로그 생성기")
     st.markdown("---")
+
 
     # 메타데이터 입력
     with st.expander("메타데이터"):
