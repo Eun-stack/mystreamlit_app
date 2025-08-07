@@ -2,7 +2,6 @@
 import streamlit as st
 import google.generativeai as genai
 from transformers import BertTokenizer, BertModel
-import torch
 import os
 
 
@@ -70,12 +69,6 @@ if True:
         if key not in st.session_state:
             st.session_state[key] = default
 
-# BERT 임베딩 생성 함수
-def get_bert_embedding(text):
-    inputs = tokenizer(text, return_tensors='pt', padding=True, truncation=True)
-    with torch.no_grad():
-        outputs = bert_model(**inputs)
-    return outputs.last_hidden_state.mean(dim=1).squeeze().numpy()  # 텍스트의 평균 벡터
 
 
 
