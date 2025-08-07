@@ -217,18 +217,18 @@ if menu == "초기 세팅":
                 13. 주인공 성격: {", ".join(st.session_state['main_character_personality'])}
                 14. 주인공 주변 관계: {", ".join(st.session_state['main_character_relationship'])}
                 """
-    # 프롤로그 생성 버튼
+
+    # 소설 생성 후 Supabase에 저장 (제목 포함)
     if st.button(f"소설 {len(st.session_state['history'])+1}화 생성하기 ✨"):
         if not gemini_api_key:
             st.error("⚠️ Gemini API 키가 설정되지 않아 소설을 생성할 수 없습니다.")
         else:
             with st.spinner("소설 생성 중입니다... 잠시만 기다려주세요."):
+
                 try:
-                    # 모든 이전 회차 내용을 결합
                     previous_content = "\n\n".join(st.session_state['history']) if st.session_state['history'] else ""
-                    
-                    # 새로운 프롬프트 생성
                     full_prompt_for_this_turn = f"""
+
 
                     다음 정보를 바탕으로 **바로 직전의 내용에 이어서** 소설 {len(st.session_state['history'])+1}화를 작성해주세요.
                     이전 회차의 내용을 참고하여 스토리가 자연스럽게 이어지도록 해주세요.
@@ -250,43 +250,6 @@ if menu == "초기 세팅":
                     12. 주인공 초능력: {", ".join(st.session_state['main_character_superpower'])}
                     13. 주인공 성격: {", ".join(st.session_state['main_character_personality'])}
                     14. 주인공 주변 관계: {", ".join(st.session_state['main_character_relationship'])}
-                    """
-                    
-                    # 모델에 프롬프트 요청
-                    response = model.generate_content([system_prompt, full_prompt_for_this_turn])
-                    result_text = response.text
-
-                    # 생성된 소설을 세션 상태에 추가
-                    st.session_state['history'].append(result_text)
-
-                    # 텍스트 파일로 저장
-                    save_path = "./MygreatNovel"
-                    file_name = f"chapter_00{len(st.session_state['history'])}.txt"
-                    try:
-                        file_path = save_text_to_file(result_text, file_name, save_path)
-                        st.success(f"소설 {len(st.session_state['history'])}화가 {file_path}에 저장되었습니다.")
-                    except Exception as e:
-                        st.error(f"⚠️ 파일 저장 중 오류가 발생했습니다: {e}")
-
-                    # 생성된 소설 결과 출력
-                    st.markdown("---")
-                    st.subheader(f"📘 생성된 소설 ({len(st.session_state['history'])}화)")
-                    st.write(result_text)
-
-                except Exception as e:
-                    st.error(f"⚠️ 소설 생성 중 오류가 발생했습니다: {e}")
-
-    # 소설 생성 후 Supabase에 저장 (제목 포함)
-    if st.button(f"소설 {len(st.session_state['history'])+1}화 생성하기 ✨"):
-        if not gemini_api_key:
-            st.error("⚠️ Gemini API 키가 설정되지 않아 소설을 생성할 수 없습니다.")
-        else:
-            with st.spinner("소설 생성 중입니다... 잠시만 기다려주세요."):
-
-                try:
-                    previous_content = "\n\n".join(st.session_state['history']) if st.session_state['history'] else ""
-                    full_prompt_for_this_turn = f"""
-                    {previous_content}
                     """
                     # 모델에 프롬프트 요청
                     response = model.generate_content([system_prompt, full_prompt_for_this_turn])
